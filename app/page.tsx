@@ -1603,12 +1603,26 @@ function AIAssistant() {
 
   const [input, setInput] = useState("");
   const [employeesData, setEmployeesData] = useState<any[]>([]);
+  const [candidatesData, setCandidatesData] = useState<any[]>([]);
   const [isThinking, setIsThinking] = useState(false);
 
   useEffect(() => {
     fetchEmployeesForAI();
+    fetchCandidatesForAI()
+    ;
   }, []);
+  const fetchCandidatesForAI = async () => {
+    const { data, error } = await supabase
+      .from("candidates")
+      .select("*");
 
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setCandidatesData(data || []);
+  };
   const fetchEmployeesForAI = async () => {
     const { data, error } = await supabase.from("employees").select("*");
 
@@ -1640,11 +1654,17 @@ function AIAssistant() {
       )
       .join("\n");
 
-    const candidateSummary = candidates
-      .map(
-        (c) =>
-          `- ${c.name}, Position: ${c.position}, Source: ${c.source}, Fit Score: ${c.fit}%, Stage: ${c.stage}, Skills: ${c.skills?.join(", ")}`
-      )
+    const candidateSummary = candidatesData
+      .map((c) => {
+        const skills =
+          typeof c.skills === "string"
+            ? c.skills
+            : Array.isArray(c.skills)
+            ? c.skills.join(", ")
+            : "Not provided";
+
+        return `- ${c.name}, Position: ${c.position}, Source: ${c.source}, Fit Score: ${c.fit}%, Stage: ${c.stage}, Skills: ${skills}`;
+      })
       .join("\n");
 
     return `
